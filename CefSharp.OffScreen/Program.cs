@@ -11,7 +11,7 @@ using System.Windows.Threading;
 namespace CefSharp.OffScreen
 {
     /// <summary>
-    /// CefSharp.OffScreen task https://billowy-heron-cf0.notion.site/c-coding-test-04c1ca6d187942adaa04a155bf0a0633
+    /// CefSharp.OffScreen test https://billowy-heron-cf0.notion.site/c-coding-test-04c1ca6d187942adaa04a155bf0a0633
     /// </summary>
     public static class Program
     {
