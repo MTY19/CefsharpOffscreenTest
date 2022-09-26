@@ -1,4 +1,6 @@
 ﻿using CefSharp.OffScreen;
+using CefSharp.OffScreen.Helper;
+using CefSharp.OffScreen.Models;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -11,7 +13,7 @@ using System.Windows.Threading;
 namespace CefSharp.OffScreen
 {
     /// <summary>
-    /// CefSharp.OffScreen test https://billowy-heron-cf0.notion.site/c-coding-test-04c1ca6d187942adaa04a155bf0a0633
+    /// CefSharp.OffScreen task https://billowy-heron-cf0.notion.site/c-coding-test-04c1ca6d187942adaa04a155bf0a0633
     /// </summary>
     public static class Program
     {
@@ -24,6 +26,7 @@ namespace CefSharp.OffScreen
 
             const string mainUrl = "https://www.cars.com/signin/";
             const string carDetailUrl = "https://www.cars.com/vehicledetail/";
+
             //Model S definitions
             List<Vehicle> firstVehicleList = new List<Vehicle>();
             List<Vehicle> firstVehicleHomeDeliveryList = new List<Vehicle>();
@@ -32,6 +35,7 @@ namespace CefSharp.OffScreen
             List<Vehicle> secondVehicleList = new List<Vehicle>();
             List<Vehicle> secondVehicleHomeDeliveryList = new List<Vehicle>();
             VehicleDetail secondVehicleDetail = new VehicleDetail();
+
             var JsonSerializeSettings = new JsonSerializerSettings
             {
                 NullValueHandling = NullValueHandling.Ignore,
@@ -65,31 +69,21 @@ namespace CefSharp.OffScreen
                     }
 
                     //login operations
-                    var loginScript = @"document.querySelector('[name=""user[email]""]').value = 'johngerson808@gmail.com';
-                                  document.querySelector('[name=""user[password]""]').value = 'test8008';
-                                  document.querySelector('button[type=submit]').click();";
-                    _ = await browser.EvaluateScriptAsync(loginScript);
+                    _ = await ChromiumWebBrowserHelper.Login(browser, "johngerson808@gmail.com", "test8008");
 
                     #region Model S
 
                     //For browser render
-                    await Task.Delay(3500);
+                    await Task.Delay(5000);
 
                     //seach vehicle 
                     //Select "used cars" then select " tesla" then "model s" then max price " 100K"
                     //then set distance to "all miles from" then set the zipcode to be 94596
-                    var setModelSSearch = @"document.querySelector('#make-model-search-stocktype').value = 'used';
-                                    document.querySelector('#makes').value = 'tesla';
-                                    document.querySelector('#models').value = 'tesla-model_s';
-                                    document.querySelector('#make-model-max-price').value = '100000';
-                                    document.querySelector('#make-model-maximum-distance').value = 'all';
-                                    document.querySelector('#make-model-zip').value = 94596;
-                                    document.querySelector('.sds-home-search__submit button[type=submit]').click();";
-
-                    _ = await browser.EvaluateScriptAsync(setModelSSearch);
+                    _ = await ChromiumWebBrowserHelper.SearchVehicle(browser, "used", "tesla",
+                        "tesla-model_s", 100000, "all", 94596);
 
                     //wait browser render
-                    await Task.Delay(3500);
+                    await Task.Delay(5000);
 
                     //first page collect vehicle list data
                     var scriptFirstPage = @"(function (){
@@ -102,16 +96,16 @@ namespace CefSharp.OffScreen
                      })();";
 
                     //get first page vehicle data list
-                    List<Vehicle> firstPageList = await GetVehicleList(browser, scriptFirstPage);
+                    List<Vehicle> firstPageList = await ChromiumWebBrowserHelper.GetVehicleList(browser, scriptFirstPage);
                     firstVehicleList.AddRange(firstPageList);
 
-                    await Task.Delay(3500);
+                    await Task.Delay(5000);
 
                     //go to next page
                     var goNextPage = @"document.querySelector('#next_paginate').click();";
                     _ = await browser.EvaluateScriptAsync(goNextPage);
 
-                    await Task.Delay(3500);
+                    await Task.Delay(5000);
 
                     //second page collect data
                     var scriptSecondPage = @"(function (){
@@ -124,10 +118,10 @@ namespace CefSharp.OffScreen
                      })();";
 
                     //get second page vehicle data list
-                    List<Vehicle> secondPageList = await GetVehicleList(browser, scriptSecondPage);
+                    List<Vehicle> secondPageList = await ChromiumWebBrowserHelper.GetVehicleList(browser, scriptSecondPage);
                     firstVehicleList.AddRange(secondPageList);
 
-                    await Task.Delay(3500);
+                    await Task.Delay(5000);
 
                     //get random car from list 
                     Random rnd = new Random();
@@ -135,7 +129,7 @@ namespace CefSharp.OffScreen
                     //Choose a specific car
                     browser.LoadUrl(carDetailUrl + firstVehicleList[randomCar].listing_id);
 
-                    await Task.Delay(3500);
+                    await Task.Delay(6000);
 
                     var scriptFirstCarDetail = @"(function (){
 
@@ -149,28 +143,29 @@ namespace CefSharp.OffScreen
                     string firstCarDetailJson = JsonConvert.SerializeObject(responseFirstCarDetail.Result, JsonSerializeSettings);
                     firstVehicleDetail = JsonConvert.DeserializeObject<VehicleDetail>(firstCarDetailJson, JsonSerializeSettings);
 
-                    await Task.Delay(3500);
+                    await Task.Delay(5000);
                     //for the home delivery
                     //go main page
                     browser.LoadUrl("https://www.cars.com");
-                    await Task.Delay(3500);
+                    await Task.Delay(5000);
 
                     //seach vehicle 
                     //Select "used cars" then select " tesla" then "model s" then max price " 100K"
                     //then set distance to "all miles from" then set the zipcode to be 94596
-                    _ = await browser.EvaluateScriptAsync(setModelSSearch);
+                    _ = await ChromiumWebBrowserHelper.SearchVehicle(browser, "used", "tesla",
+                     "tesla-model_s", 100000, "all", 94596);
 
-                    await Task.Delay(3500);
+                    await Task.Delay(5000);
 
                     //filter home delivery
                     var homeDeliveryCheck = @"document.querySelector('#mobile_home_delivery_true').checked = true;";
                     _ = await browser.EvaluateScriptAsync(homeDeliveryCheck);
 
-                    await Task.Delay(3500);
+                    await Task.Delay(5000);
 
                     //collect data home delivery data
                     //get second page vehicle data list
-                    firstVehicleHomeDeliveryList = await GetVehicleList(browser, scriptSecondPage);
+                    firstVehicleHomeDeliveryList = await ChromiumWebBrowserHelper.GetVehicleList(browser, scriptSecondPage);
 
                     #endregion
 
@@ -179,41 +174,34 @@ namespace CefSharp.OffScreen
                     //go to main page    
                     browser.LoadUrl("https://www.cars.com");
                     //For browser render
-                    await Task.Delay(3500);
+                    await Task.Delay(5000);
 
                     //seach vehicle 
                     //Select "used cars" then select " tesla" then "model s" then max price " 100K"
                     //then set distance to "all miles from" then set the zipcode to be 94596
-                    var setModelXSearch = @"document.querySelector('#make-model-search-stocktype').value = 'used';
-                                    document.querySelector('#makes').value = 'tesla';
-                                    document.querySelector('#models').value = 'tesla-model_x';
-                                    document.querySelector('#make-model-max-price').value = '100000';
-                                    document.querySelector('#make-model-maximum-distance').value = 'all';
-                                    document.querySelector('#make-model-zip').value = 94596;
-                                    document.querySelector('.sds-home-search__submit button[type=submit]').click();";
-
-                    _ = await browser.EvaluateScriptAsync(setModelXSearch);
+                    _ = await ChromiumWebBrowserHelper.SearchVehicle(browser, "used", "tesla",
+                     "tesla-model_x", 100000, "all", 94596);
 
                     //wait browser render
-                    await Task.Delay(3500);
+                    await Task.Delay(5000);
 
                     //first page collect vehicle list data
                     //get first page vehicle data list
-                    List<Vehicle> firstXPageList = await GetVehicleList(browser, scriptFirstPage);
+                    List<Vehicle> firstXPageList = await ChromiumWebBrowserHelper.GetVehicleList(browser, scriptFirstPage);
                     secondVehicleList.AddRange(firstXPageList);
 
-                    await Task.Delay(3500);
+                    await Task.Delay(5000);
 
                     //go to next page
                     _ = await browser.EvaluateScriptAsync(goNextPage);
 
-                    await Task.Delay(3500);
+                    await Task.Delay(5000);
 
                     //get second page vehicle data list
-                    List<Vehicle> secondXPageList = await GetVehicleList(browser, scriptSecondPage);
+                    List<Vehicle> secondXPageList = await ChromiumWebBrowserHelper.GetVehicleList(browser, scriptSecondPage);
                     secondVehicleList.AddRange(secondXPageList);
 
-                    await Task.Delay(3500);
+                    await Task.Delay(5000);
 
                     //get random car from list 
                     Random rndom = new Random();
@@ -221,7 +209,7 @@ namespace CefSharp.OffScreen
                     //Choose a specific car
                     browser.LoadUrl(carDetailUrl + secondVehicleList[randomSecondCar].listing_id);
 
-                    await Task.Delay(3500);
+                    await Task.Delay(6000);
 
                     var scriptSecondCarDetail = @"(function (){
 
@@ -235,27 +223,29 @@ namespace CefSharp.OffScreen
                     string secondCarDetailJson = JsonConvert.SerializeObject(responseSecondCarDetail.Result, JsonSerializeSettings);
                     secondVehicleDetail = JsonConvert.DeserializeObject<VehicleDetail>(secondCarDetailJson, JsonSerializeSettings);
 
-                    await Task.Delay(3500);
+                    await Task.Delay(5000);
                     //for the home delivery
                     //go main page
                     browser.LoadUrl("https://www.cars.com");
-                    await Task.Delay(3500);
+                    await Task.Delay(5000);
 
                     //seach vehicle 
                     //Select "used cars" then select " tesla" then "model s" then max price " 100K"
                     //then set distance to "all miles from" then set the zipcode to be 94596
-                    _ = await browser.EvaluateScriptAsync(setModelXSearch);
+                    _ = await ChromiumWebBrowserHelper.SearchVehicle(browser, "used", "tesla",
+                     "tesla-model_x", 100000, "all", 94596);
+                    //_ = await browser.EvaluateScriptAsync(setModelXSearch);
 
-                    await Task.Delay(3500);
+                    await Task.Delay(5000);
 
                     //filter home delivery
                     _ = await browser.EvaluateScriptAsync(homeDeliveryCheck);
 
-                    await Task.Delay(3500);
+                    await Task.Delay(5000);
 
                     //collect data home delivery data
                     //get second page vehicle data list
-                    secondVehicleHomeDeliveryList = await GetVehicleList(browser, scriptSecondPage);
+                    secondVehicleHomeDeliveryList = await ChromiumWebBrowserHelper.GetVehicleList(browser, scriptSecondPage);
 
                     #endregion
 
@@ -294,148 +284,7 @@ namespace CefSharp.OffScreen
             return 0;
         }
 
-        public static async Task<List<Vehicle>> GetVehicleList(ChromiumWebBrowser browser, String script)
-        {
-            List<Vehicle> vehicleList = new List<Vehicle>();
+  
 
-            var JsonSerializeSettings = new JsonSerializerSettings
-            {
-                NullValueHandling = NullValueHandling.Ignore,
-                MissingMemberHandling = MissingMemberHandling.Ignore
-            };
-
-            JavascriptResponse response = await browser.EvaluateScriptAsync(script);
-
-            dynamic arrayPage = response.Result;
-
-            foreach (dynamic obj in arrayPage)
-            {
-                if (obj != null)
-                {
-                    vehicleList.Add(JsonConvert.DeserializeObject<Vehicle>(obj, JsonSerializeSettings));
-                }
-            }
-
-            return vehicleList;
-        }
-
-        public class Result
-        {
-            public List<Vehicle> firstVehicleList { get; set; }
-            public List<Vehicle> firstVehicleHomeDeliveryList { get; set; }
-            public VehicleDetail firstVehicleDetail { get; set; }
-            public List<Vehicle> secondVehicleList { get; set; }
-            public List<Vehicle> secondVehicleHomeDeliveryList { get; set; }
-            public VehicleDetail secondVehicleDetail { get; set; }
-        }
-
-        public class Vehicle
-        {
-            [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
-            public string bodystyle { get; set; }
-            [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
-            public bool cpo_indicator { get; set; }
-            [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
-            public string customer_id { get; set; }
-            [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
-            public string horizontal_position { get; set; }
-            [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
-            public string listing_id { get; set; }
-            [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
-            public string make { get; set; }
-            [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
-            public string model { get; set; }
-            [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
-            public int model_year { get; set; }
-            [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
-            public string msrp { get; set; }
-            [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
-            public string price { get; set; }
-            [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
-            public bool sponsored { get; set; }
-            [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
-            public string stock_type { get; set; }
-            [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
-            public string trim { get; set; }
-            [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
-            public int vertica_position { get; set; }
-            [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
-            public string web_page_type_from { get; set; }
-        }
-
-        public class VehicleDetail
-        {
-            public string customer_id { get; set; }
-            public string dealer_name { get; set; }
-            public Vhr vhr { get; set; }
-            public string trip_id { get; set; }
-            public object marketing_click_data { get; set; }
-            public string vertical_position { get; set; }
-            public string page_type { get; set; }
-            public int photo_count { get; set; }
-            public string mileage { get; set; }
-            public string profileAccountType { get; set; }
-            public string trim { get; set; }
-            public bool loginStatus { get; set; }
-            public string make { get; set; }
-            public string local_zone { get; set; }
-            public object utm_source { get; set; }
-            public string msrp { get; set; }
-            public string page_name { get; set; }
-            public object page_detail { get; set; }
-            public string market_name { get; set; }
-            public object utm_medium { get; set; }
-            public string drivetrain { get; set; }
-            public bool cpo_indicator { get; set; }
-            public string useragent { get; set; }
-            public string model { get; set; }
-            public string private_seller { get; set; }
-            public string url_referer { get; set; }
-            public string vin { get; set; }
-            public object utm_term { get; set; }
-            public string designated_market_area_key { get; set; }
-            public string canonical_mmt { get; set; }
-            public string seller_type { get; set; }
-            public string fuel_type { get; set; }
-            public string stock_sub { get; set; }
-            public string stock_type { get; set; }
-            public string listing_id { get; set; }
-            public object utm_campaign { get; set; }
-            public string canonical_mmty { get; set; }
-            public List<string> page_features { get; set; }
-            public string lat_long { get; set; }
-            public string page_key { get; set; }
-            public string interior_color { get; set; }
-            public string search_instance_id { get; set; }
-            public object price_badge { get; set; }
-            public string platform_id { get; set; }
-            public bool sponsored { get; set; }
-            public string aff_code { get; set; }
-            public List<string> badges { get; set; }
-            public string zip_ip2geo { get; set; }
-            public string dealer_zip { get; set; }
-            public string page_channel { get; set; }
-            public object utm_content { get; set; }
-            public string url_base { get; set; }
-            public string partner_name { get; set; }
-            public string price { get; set; }
-            public string exterior_color { get; set; }
-            public string dealer_dma { get; set; }
-            public string bodystyle { get; set; }
-            public string marketing_click_id { get; set; }
-            public string marketing_referral_source { get; set; }
-            public object seller_id { get; set; }
-            public string cat { get; set; }
-            public string year { get; set; }
-        }
-
-        public class Vhr
-        {
-            public bool accidents_or_damage { get; set; }
-            public bool one_owner_vehicle { get; set; }
-            public bool open_recall { get; set; }
-            public bool personal_use_only { get; set; }
-            public string vhr_type { get; set; }
-        }
     }
 }
